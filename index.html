@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JB 產品保固查詢</title>
+<meta name="robots" content="noindex">
+<style>
+  :root{--bg:#121214;--card:#1c1d21;--line:#2c2e34;--text:#ececef;--muted:#9a9ca5;--silver:#c9cbd0;
+        --ok:#3ecf8e;--warn:#f5b84a;--bad:#ef5a5a;--accent:#d8dadf}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;line-height:1.6}
+  main{max-width:520px;margin:0 auto;padding:20px 16px 48px}
+  header{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .logo{font-weight:800;letter-spacing:.12em;font-size:15px;color:var(--silver)}
+  .logo b{color:#fff}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+  .plate{background:linear-gradient(180deg,#d9dbe0,#b9bcc3);color:#111;border-radius:12px;padding:16px 18px;margin-bottom:14px}
+  .plate .model{font-weight:800;font-size:24px;letter-spacing:.02em}
+  .plate .name{font-weight:700;font-size:15px}
+  .plate .en{font-size:12px;letter-spacing:.08em;opacity:.8}
+  .plate .sn{font-family:Consolas,monospace;font-weight:700;margin-top:6px}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-weight:700;border-radius:999px;padding:4px 12px;font-size:14px}
+  .b-ok{background:rgba(62,207,142,.15);color:var(--ok)} .b-warn{background:rgba(245,184,74,.15);color:var(--warn)}
+  .b-bad{background:rgba(239,90,90,.15);color:var(--bad)}
+  .genuine{color:var(--ok);font-weight:700;margin-bottom:8px}
+  dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:12px 0 0}
+  dt{color:var(--muted)} dd{margin:0;font-weight:600}
+  h2{font-size:16px;margin:0 0 10px}
+  .desc{white-space:pre-line;color:var(--text)}
+  label{display:block;font-size:14px;color:var(--muted);margin:10px 0 4px}
+  input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#121317;color:var(--text);font-size:16px}
+  button{margin-top:14px;width:100%;padding:12px;border:0;border-radius:10px;background:var(--accent);color:#111;font-weight:800;font-size:16px;cursor:pointer}
+  button:disabled{opacity:.5}
+  .note{font-size:13px;color:var(--muted)}
+  .err{color:var(--bad);font-weight:700}
+  a{color:var(--silver)}
+  .loading{color:var(--muted);text-align:center;padding:40px 0}
+</style>
+</head>
+<body>
+<main>
+  <header><div class="logo"><b>JB</b> CAR TECH LAB</div></header>
+  <div id="app"><div class="loading">查詢中…</div></div>
+</main>
+<script>
+
+const API_URL = "https://script.google.com/macros/s/AKfycbwW6cVUaaKrmGk8QBFLBNxADI74mFKTtqfoVvI-eaaAqwtRq9oNiKyJZC119Qr0ISgSNg/exec";
+
+const qs = new URLSearchParams(location.search);
+const SN = (qs.get("s") || "").trim(), KEY = (qs.get("k") || "").trim();
+const app = document.getElementById("app");
+
+function el(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) k === "class" ? e.className = v : e.setAttribute(k, v);
+  for (const c of kids) if (c != null) e.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  return e;
+}
+const STATUS = {
+  active: ["b-ok", "✓ 保固中"], expired: ["b-bad", "保固已過期"], repair: ["b-warn", "維修處理中"],
+  replaced: ["b-warn", "已更換新品"], notShipped: ["b-warn", "尚未出貨登記"], void: ["b-bad", "序號已作廢"]
+};
+
+async function api(params) {
+  const u = new URL(API_URL); Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
+  const r = await fetch(u.toString()); return r.json();
+}
+
+function render(d) {
+  app.replaceChildren();
+  if (!d.ok) { app.append(el("div", { class: "card" }, el("p", { class: "err" }, d.error || "查詢失敗"))); return; }
+  app.append(el("div", { class: "plate" },
+    el("div", { class: "model" }, d.model), el("div", { class: "name" }, d.name),
+    el("div", { class: "en" }, d.nameEn + (d.vehicle ? " ｜ FOR " + d.vehicle.toUpperCase() : "")),
+    el("div", { class: "sn" }, "SN: " + d.sn)));
+
+  const [cls, txt] = STATUS[d.status] || ["b-warn", d.status];
+  const card = el("div", { class: "card" }, el("div", { class: "genuine" }, "✔ 正版商品認證"), el("span", { class: "badge " + cls }, txt));
+  const dl = el("dl");
+  const row = (k, v) => v && dl.append(el("dt", {}, k), el("dd", {}, v));
+  row("適用車型", d.vehicle);
+  if (d.start) row("保固起算", d.start + (d.registered ? "（安裝日）" : "（依出貨日）"));
+  if (d.end) row("保固到期", d.end + (d.status === "active" ? `（剩 ${d.daysLeft} 天）` : ""));
+  row("保固期", d.warrantyMonths + " 個月");
+  if (d.registered) row("安裝店家", d.shop || "—");
+  row("PCB / 韌體", [d.pcb, d.fw].filter(Boolean).join(" / "));
+  card.append(dl);
+  if (d.justRegistered) card.append(el("p", { class: "note" }, "✓ 安裝日登記完成"));
+  app.append(card);
+
+  if (d.canRegister) app.append(registerForm(d));
+  else if (!d.registered && d.shipped && d.status !== "void")
+    app.append(el("div", { class: "card note" }, "已超過登記期限，保固依出貨日自動起算。"));
+
+  if (d.description) app.append(el("div", { class: "card" }, el("h2", {}, "功能說明"), el("div", { class: "desc" }, d.description)));
+  const links = el("div", { class: "card" }, el("h2", {}, "安裝說明與客服"));
+  if (d.manual) links.append(el("p", {}, el("a", { href: d.manual, target: "_blank", rel: "noopener" }, "→ 安裝說明 / 常見問題")));
+  links.append(el("p", { class: "desc" }, d.support || "客服資訊準備中"));
+  app.append(links);
+}
+
+function registerForm(d) {
+  const today = new Date(); const iso = new Date(today.getTime() - today.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+  const date = el("input", { type: "date", min: d.registerMin, max: iso < d.registerDeadline ? iso : d.registerDeadline, required: "" });
+  const shop = el("input", { type: "text", maxlength: "50", placeholder: "選填" });
+  const phone = el("input", { type: "tel", maxlength: "20", placeholder: "選填，保固聯絡用" });
+  const msg = el("p", { class: "err" });
+  const btn = el("button", { type: "submit" }, "登記安裝日");
+  const form = el("form", { class: "card" },
+    el("h2", {}, "登記安裝日（啟用保固）"),
+    el("p", { class: "note" }, `登記後保固從安裝日起算；未登記則從出貨日 + ${d.defaultDays} 天起算。請於 ${d.registerDeadline} 前登記，登記後不可自行修改。`),
+    el("label", {}, "安裝日期（必填）"), date, el("label", {}, "安裝店家"), shop, el("label", {}, "聯絡電話"), phone, btn, msg);
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault(); if (!date.value) return;
+    if (!confirm(`確認安裝日期為 ${date.value}？登記後無法自行修改。`)) return;
+    btn.disabled = true; msg.textContent = "";
+    try {
+      const r = await api({ action: "register", s: SN, k: KEY, date: date.value, shop: shop.value, phone: phone.value });
+      if (r.ok) render(r); else { msg.textContent = r.error; btn.disabled = false; }
+    } catch { msg.textContent = "連線失敗，請稍後再試"; btn.disabled = false; }
+  });
+  return form;
+}
+
+(async () => {
+  if (qs.has("demo")) {   // 展示模式：?demo=1（不連線，顯示範例資料）
+    const reg = qs.get("demo") === "2";
+    render({ ok: true, sn: "MXF45-2646-0001", model: "JB-MX1-F45", name: "JB MATRIX 大燈優化模組", nameEn: "HEADLIGHT OPTIMIZATION KIT",
+      vehicle: "Ford Focus MK4.5", description: "（功能說明範例）\n· 大燈矩陣功能優化\n· 隨插即用，免剪線", manual: "", support: "LINE：@jbcartechlab（範例）",
+      pcb: "V1.0", fw: "1.0.0", shipped: true, registered: reg, installDate: reg ? "2026-11-20" : "", shop: reg ? "台北安裝店" : "",
+      warrantyMonths: 12, defaultDays: 3, start: reg ? "2026-11-20" : "2026-11-23", end: reg ? "2027-11-20" : "2027-11-23", daysLeft: 365,
+      canRegister: !reg, registerDeadline: "2027-02-18", registerMin: "2026-11-20", status: "active" });
+    return;
+  }
+  if (!SN || !KEY) {
+    app.replaceChildren(el("div", { class: "card" }, el("h2", {}, "JB 產品保固查詢"),
+      el("p", {}, "請用手機掃描產品貼紙上的 QR Code 查詢保固與登記安裝日。")));
+    return;
+  }
+  try { render(await api({ s: SN, k: KEY })); }
+  catch { app.replaceChildren(el("div", { class: "card" }, el("p", { class: "err" }, "連線失敗，請稍後再試"))); }
+})();
+</script>
+</body>
+</html>
