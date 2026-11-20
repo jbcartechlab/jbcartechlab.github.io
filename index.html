@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JB 產品保固查詢</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23c9cbd0'/%3E%3Ctext x='16' y='22' font-family='Arial,sans-serif' font-size='15' font-weight='800' text-anchor='middle' fill='%23111'%3EJB%3C/text%3E%3C/svg%3E">
+<style>
+  :root{--bg:#121214;--card:#1c1d21;--line:#2c2e34;--text:#ececef;--muted:#9a9ca5;--silver:#c9cbd0;
+        --ok:#3ecf8e;--warn:#f5b84a;--bad:#ef5a5a;--accent:#d8dadf}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;line-height:1.6}
+  main{max-width:520px;margin:0 auto;padding:20px 16px 48px}
+  header{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .logo{font-weight:800;letter-spacing:.12em;font-size:15px;color:var(--silver)}
+  .logo b{color:#fff}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+  .plate{background:linear-gradient(180deg,#d9dbe0,#b9bcc3);color:#111;border-radius:12px;padding:16px 18px;margin-bottom:14px}
+  .pframe{background:linear-gradient(180deg,#d9dbe0,#b9bcc3);border-radius:10px;padding:12px;margin:0 0 14px}
+  .pframe img{display:block;width:100%;max-width:380px;height:auto;margin:0 auto}
+  .plate .model{font-weight:800;font-size:24px;letter-spacing:.02em}
+  .plate .name{font-weight:700;font-size:15px}
+  .plate .en{font-size:12px;letter-spacing:.08em;opacity:.8}
+  .plate .sn{font-family:Consolas,monospace;font-weight:700;margin-top:6px}
+  .badge{display:inline-flex;align-items:center;gap:6px;font-weight:700;border-radius:999px;padding:4px 12px;font-size:14px}
+  .b-ok{background:rgba(62,207,142,.15);color:var(--ok)} .b-warn{background:rgba(245,184,74,.15);color:var(--warn)}
+  .b-bad{background:rgba(239,90,90,.15);color:var(--bad)}
+  .genuine{color:var(--ok);font-weight:700;margin-bottom:8px}
+  dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:12px 0 0}
+  dt{color:var(--muted)} dd{margin:0;font-weight:600}
+  h2{font-size:16px;margin:0 0 10px}
+  .desc{white-space:pre-line;color:var(--text)}
+  label{display:block;font-size:14px;color:var(--muted);margin:10px 0 4px}
+  input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#121317;color:var(--text);font-size:16px}
+  button{margin-top:14px;width:100%;padding:12px;border:0;border-radius:10px;background:var(--accent);color:#111;font-weight:800;font-size:16px;cursor:pointer}
+  button:disabled{opacity:.6;cursor:wait}
+  .spin{display:inline-block;width:16px;height:16px;margin-right:8px;vertical-align:-3px;border:2px solid rgba(0,0,0,.25);border-top-color:#111;border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .note{font-size:13px;color:var(--muted)}
+  .fixed{margin:0;padding:11px 12px;border-radius:10px;border:1px dashed var(--line);color:var(--muted);font-size:15px}
+  .desc .li{padding-left:1em;text-indent:-1em}
+  .desc .gap{height:.6em}
+  .terms{font-size:14px;color:var(--muted)}
+  .privacy{margin:14px 0 0}
+  .tip{background:rgba(245,184,74,.12);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:700;margin:0 0 8px}
+  .err{color:var(--bad);font-weight:700}
+  a{color:var(--silver)}
+  .loading{color:var(--muted);text-align:center;padding:40px 0}
+</style>
+</head>
+<body>
+<main>
+  <header><div class="logo"><b>JB</b> CAR TECH LAB</div></header>
+  <div id="app"><div class="loading">查詢中…</div></div>
+</main>
+<script>
+// ★ 部署 Apps Script 後，把「網頁應用程式網址」貼到這裡
+const API_URL = "https://script.google.com/macros/s/AKfycbwW6cVUaaKrmGk8QBFLBNxADI74mFKTtqfoVvI-eaaAqwtRq9oNiKyJZC119Qr0ISgSNg/exec";
+
+const qs = new URLSearchParams(location.search);
+const SN = (qs.get("s") || "").trim(), KEY = (qs.get("k") || "").trim();
+const app = document.getElementById("app");
+
+function el(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) k === "class" ? e.className = v : e.setAttribute(k, v);
+  for (const c of kids) if (c != null) e.append(c instanceof Node ? c : document.createTextNode(String(c)));
+  return e;
+}
+// 文字轉超連結：支援 [顯示文字](網址) 與直接貼的 https:// 網址；只允許 http(s) / tel: / mailto:
+// 多行文字：每行一個區塊；「・」「•」「-」開頭的行換行時對齊項目符號後的文字；空行 = 段落間距
+function richText(text) {
+  return String(text).split(/\r?\n/).map(line => {
+    const t = line.trim();
+    if (!t) return el("div", { class: "gap" });
+    return el("div", { class: /^[・•\-]/.test(t) ? "li" : "" }, ...linkify(t));
+  });
+}
+function linkify(text) {
+  const out = [], re = /\[([^\]]+)\]\(((?:https?:\/\/|tel:|mailto:)[^\s)]+)\)|(https?:\/\/[^\s<>()（）]+)/g;
+  let last = 0, m;
+  while ((m = re.exec(text))) {
+    out.push(text.slice(last, m.index));
+    const href = m[2] || m[3], label = m[1] || m[3];
+    out.push(el("a", href.startsWith("http") ? { href, target: "_blank", rel: "noopener" } : { href }, label));
+    last = re.lastIndex;
+  }
+  out.push(text.slice(last));
+  return out;
+}
+const STATUS = {
+  active: ["b-ok", "✓ 保固中"], expired: ["b-bad", "保固已過期"], repair: ["b-warn", "維修處理中"],
+  replaced: ["b-warn", "已更換新品"], notShipped: ["b-warn", "尚未出貨登記"], void: ["b-bad", "序號已作廢"],
+  "待安裝登記": ["b-warn", "保固尚未啟用"]   // 店家件未登記（試算表狀態欄寫「待安裝登記」）
+};
+
+async function api(params) {
+  const u = new URL(API_URL); Object.entries(params).forEach(([k, v]) => u.searchParams.set(k, v));
+  const r = await fetch(u.toString()); return r.json();
+}
+
+function render(d) {
+  app.replaceChildren();
+  if (!d.ok) { app.append(el("div", { class: "card" }, el("p", { class: "err" }, d.error || "查詢失敗"))); return; }
+  app.append(el("div", { class: "plate" },
+    el("div", { class: "model" }, d.model), el("div", { class: "name" }, d.name),
+    el("div", { class: "en" }, d.nameEn + (d.vehicle ? " ｜ FOR " + d.vehicle.toUpperCase() : "")),
+    el("div", { class: "sn" }, "SN: " + d.sn)));
+
+  const [cls, txt] = STATUS[d.status] || ["b-warn", d.status];
+  const card = el("div", { class: "card" }, el("div", { class: "genuine" }, "✔ 正版商品認證"), el("span", { class: "badge " + cls }, txt));
+  const dl = el("dl");
+  const row = (k, v) => v && dl.append(el("dt", {}, k), el("dd", {}, v));
+  row("適用車型", d.vehicle);
+  if (d.start) row("保固起算", d.start + (d.startByInstall ? "（安裝日）" : "（依出貨日自動起算）"));
+  if (d.end) row("保固到期", d.end + (d.status === "active" ? `（剩 ${d.daysLeft} 天）` : ""));
+  row("保固期", d.warrantyMonths + " 個月");
+  if (d.registered) row("安裝店家", d.shop || "—");
+  if (d.registered) row("登記車牌", d.plate);
+  row("PCB / 韌體", [d.pcb, d.fw].filter(Boolean).join(" / "));
+  card.append(dl);
+  if (d.status === "待安裝登記") card.append(el("p", { class: "note" }, "此商品由授權店家安裝，店家完成安裝登記後，保固才開始起算。"));
+  if (d.justRegistered) card.append(el("p", { class: "note" }, "✓ 保固登記完成"));
+  else if (d.registered) card.append(el("p", { class: "note" }, "如登記資料有誤或非本人登記，請聯絡客服或安裝店家。"));
+  app.append(card);
+
+  if (d.canRegister) app.append(registerForm(d));
+
+  // 功能說明：上方放產品圖（與 index.html 同資料夾的「<型號>.webp」，例 JB-MX1-F45.webp；找不到就不顯示）
+  const pimg = el("img", { src: encodeURIComponent(d.model) + ".webp", alt: d.model + " 產品圖", width: "720", height: "489", decoding: "async", loading: "lazy" });
+  const pframe = el("div", { class: "pframe" }, pimg);
+  pimg.addEventListener("error", () => pframe.remove());
+  app.append(el("div", { class: "card" }, el("h2", {}, "功能說明"), pframe,
+    d.description ? el("div", { class: "desc" }, ...richText(d.description)) : null));
+  if (d.terms) app.append(el("div", { class: "card" }, el("h2", {}, "保固與注意事項"), el("div", { class: "desc terms" }, ...richText(d.terms))));
+  const links = el("div", { class: "card" }, el("h2", {}, "安裝說明與客服"));
+  if (/^https?:\/\//i.test(d.manual || "")) links.append(el("p", {}, el("a", { href: d.manual, target: "_blank", rel: "noopener" }, "→ 安裝說明 / 常見問題")));
+  else if (d.manual) links.append(el("p", {}, "安裝說明：" + d.manual));   // 例如「建置中」
+  links.append(el("p", { class: "desc" }, ...linkify(d.support || "客服資訊準備中")));
+  app.append(links);
+}
+
+function registerForm(d) {
+  const now = new Date(); const iso = new Date(now.getTime() - now.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+  const date = el("input", { type: "date", min: d.registerMin, max: iso, value: iso, required: "" });   // 店家件：預設今天，可往回選
+  const shop = el("input", { type: "text", maxlength: "30", autocomplete: "off", autocapitalize: "characters", placeholder: "由安裝店家填寫", required: "" });
+  const phone = el("input", { type: "tel", inputmode: "numeric", maxlength: "15", placeholder: "例如 0912345678", required: "" });
+  const plate = el("input", { type: "text", maxlength: "10", autocapitalize: "characters", autocomplete: "off", placeholder: "例如 ABC-1234", required: "" });
+  // 輸入時即時過濾：電話只留數字；車牌只留英文、數字、-（自動轉大寫）
+  const only = (inp, fn) => inp.addEventListener("input", () => { const v = fn(inp.value); if (v !== inp.value) inp.value = v; });
+  only(phone, v => v.replace(/\D/g, ""));
+  only(plate, v => v.toUpperCase().replace(/[^A-Z0-9-]/g, ""));
+  const shopFields = d.needShop ? [el("label", {}, "店家代碼（授權店家安裝時由店家填寫）（必填）"), shop] : [];
+  const msg = el("p", { class: "err" });
+  // 店家件（期限內）：選安裝日（預設今天）；自行安裝件或逾期：保固起算固定為出貨日 + N 天，不能選
+  const late = !d.needShop || d.lateRegister;
+  const BTN = "登記保固";
+  const btn = el("button", { type: "submit" }, BTN);
+  const dateFields = late
+    ? [el("label", {}, "保固起算日"), el("p", { class: "fixed" }, `${d.start}（出貨日 + ${d.defaultDays} 天自動起算）`)]
+    : [el("label", {}, "安裝日期（必填，預設今天）"), date];
+  const form = el("form", { class: "card", novalidate: "" },
+    el("h2", {}, d.needShop && d.lateRegister ? "補登保固資料" : "保固登記"),
+    d.needShop ? el("p", { class: "tip" }, "本商品為授權店家安裝件，請由安裝店家協助登記。") : null,
+    el("p", { class: "note" }, late
+      ? `保固已自動起算。請登記聯絡資料，方便日後保固服務；送出後不可自行修改。`
+      : `保固自安裝日起算（最早為出貨日 + ${d.defaultDays} 天）。請於安裝完成後登記，送出後不可自行修改。`),
+    ...dateFields, ...shopFields,
+    el("label", {}, "車主聯絡電話（必填）"), phone, el("label", {}, "車牌號碼（必填）"), plate,
+    el("p", { class: "note privacy" }, "電話與車牌僅用於保固服務聯絡與身分核對，不會提供給第三方。"),
+    btn, msg);
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const miss = [...(late ? [] : [[date, "安裝日期"]]), ...(d.needShop ? [[shop, "店家代碼"]] : []), [phone, "車主聯絡電話"], [plate, "車牌號碼"]]
+      .filter(([x]) => !x.value.trim()).map(([, n]) => n);
+    if (miss.length) { alert("請填寫：" + miss.join("、")); return; }
+    const who = d.needShop ? `店家代碼：${shop.value.trim()}` : "車主自行安裝";
+    if (!confirm(`請確認登記資料：\n${late ? "保固起算：" + d.start : "安裝日期：" + date.value}\n${who}\n車牌：${plate.value.trim().toUpperCase()}\n電話：${phone.value.trim()}\n\n登記後無法自行修改。`)) return;
+    const busy = (on) => {   // 登記中：按鈕轉圈、欄位鎖住
+      [btn, date, shop, phone, plate].forEach(x => x.disabled = on);
+      btn.replaceChildren(...(on ? [el("span", { class: "spin" }), "登記中，請稍候…"] : [BTN]));
+    };
+    const fail = (t) => { msg.textContent = t; busy(false); alert(t); };
+    busy(true); msg.textContent = "";
+    try {
+      const r = await api({ action: "register", s: SN, k: KEY, date: late ? "" : date.value, shop: d.needShop ? shop.value : "", phone: phone.value, plate: plate.value });
+      if (r.ok) render(r); else fail(r.error || "登記失敗，請稍後再試");
+    } catch { fail("連線失敗，請稍後再試"); }
+  });
+  return form;
+}
+
+(async () => {
+  if (!SN || !KEY) {
+    app.replaceChildren(el("div", { class: "card" }, el("h2", {}, "JB 產品保固查詢"),
+      el("p", {}, "請用手機掃描產品貼紙上的 QR Code 查詢保固與登記安裝日。")));
+    return;
+  }
+  try { render(await api({ s: SN, k: KEY })); }
+  catch { app.replaceChildren(el("div", { class: "card" }, el("p", { class: "err" }, "連線失敗，請稍後再試"))); }
+})();
+</script>
+</body>
+</html>
