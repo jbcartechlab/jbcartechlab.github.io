@@ -143,6 +143,14 @@ function render(d) {
   app.append(links);
 }
 
+// 車牌顯示用（與後端 fmtPlate_ 相同規則）：ABC1234 → ABC-1234；實際寫入以後端為準
+function fmtPlate(s) {
+  const v = String(s || "").toUpperCase().replace(/\s/g, "");
+  if (v.includes("-")) return v;
+  const m = v.match(/^([A-Z]+)(\d+)$/) || v.match(/^(\d+)([A-Z]+)$/);
+  return m ? m[1] + "-" + m[2] : v;
+}
+
 function registerForm(d) {
   const now = new Date(); const iso = new Date(now.getTime() - now.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
   const date = el("input", { type: "date", min: d.registerMin, max: iso, value: iso, required: "" });   // 店家件：預設今天，可往回選
@@ -178,7 +186,7 @@ function registerForm(d) {
       .filter(([x]) => !x.value.trim()).map(([, n]) => n);
     if (miss.length) { alert("請填寫：" + miss.join("、")); return; }
     const who = d.needShop ? `店家代碼：${shop.value.trim()}` : "車主自行安裝";
-    if (!confirm(`請確認登記資料：\n${late ? "保固起算：" + d.start : "安裝日期：" + date.value}\n${who}\n車牌：${plate.value.trim().toUpperCase()}\n電話：${phone.value.trim()}\n\n登記後無法自行修改。`)) return;
+    if (!confirm(`請確認登記資料：\n${late ? "保固起算：" + d.start : "安裝日期：" + date.value}\n${who}\n車牌：${fmtPlate(plate.value)}\n電話：${phone.value.trim()}\n\n登記後無法自行修改。`)) return;
     const busy = (on) => {   // 登記中：按鈕轉圈、欄位鎖住
       [btn, date, shop, phone, plate].forEach(x => x.disabled = on);
       btn.replaceChildren(...(on ? [el("span", { class: "spin" }), "登記中，請稍候…"] : [BTN]));
