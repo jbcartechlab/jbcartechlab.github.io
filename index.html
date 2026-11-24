@@ -232,7 +232,7 @@ function landing() {
     el("div", { class: "card" }, el("h2", {}, "JB 產品保固查詢"),
       el("p", {}, "請用手機掃描產品貼紙上的 QR Code，查詢保固或進行保固登記。")),
     form, products,
-    el("div", { class: "card" }, el("h2", {}, "客服"), el("p", { class: "note" }, "QR Code 無法掃描或貼紙損壞？請聯絡客服："), support));
+    el("div", { class: "card" }, el("h2", {}, "聯絡我們"), el("p", { class: "note" }, "產品介紹、安裝、保固或 QR Code 無法掃描等任何問題，歡迎與我們聯繫："), support));
   api({ action: "info" }).then(r => {
     support.replaceChildren(...linkify((r && r.support) || "客服資訊準備中"));
     const list = (r && r.products) || [];
