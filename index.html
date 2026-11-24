@@ -35,6 +35,8 @@
   input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#121317;color:var(--text);font-size:16px}
   button{margin-top:14px;width:100%;padding:12px;border:0;border-radius:10px;background:var(--accent);color:#111;font-weight:800;font-size:16px;cursor:pointer}
   button:disabled{opacity:.6;cursor:wait}
+  button.pick{display:block;text-align:left;background:#121317;color:var(--text);border:1px solid var(--line);font-weight:600;margin-top:10px}
+  button.pick .note{margin:2px 0 6px}
   .spin{display:inline-block;width:16px;height:16px;margin-right:8px;vertical-align:-3px;border:2px solid rgba(0,0,0,.25);border-top-color:#111;border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   .note{font-size:13px;color:var(--muted)}
@@ -191,12 +193,58 @@ function registerForm(d) {
   return form;
 }
 
+// 首頁（網址沒有序號）：掃碼說明 + 已登記車主用 電話 + 車牌 查詢 + 客服
+function landing() {
+  const phone = el("input", { type: "tel", inputmode: "numeric", maxlength: "15", placeholder: "例如 0912345678" });
+  const plate = el("input", { type: "text", maxlength: "10", autocapitalize: "characters", autocomplete: "off", placeholder: "例如 ABC-1234" });
+  phone.addEventListener("input", () => { const v = phone.value.replace(/\D/g, ""); if (v !== phone.value) phone.value = v; });
+  plate.addEventListener("input", () => { const v = plate.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""); if (v !== plate.value) plate.value = v; });
+  const msg = el("p", { class: "err" });
+  const btn = el("button", { type: "submit" }, "查詢保固");
+  const form = el("form", { class: "card", novalidate: "" },
+    el("h2", {}, "已登記車主查詢"),
+    el("p", { class: "note" }, "請輸入保固登記時填寫的車主聯絡電話與車牌號碼。"),
+    el("label", {}, "車主聯絡電話"), phone, el("label", {}, "車牌號碼"), plate, btn, msg);
+  const support = el("p", { class: "desc" }, "客服資訊載入中…");
+  app.replaceChildren(
+    el("div", { class: "card" }, el("h2", {}, "JB 產品保固查詢"),
+      el("p", {}, "請用手機掃描產品貼紙上的 QR Code，查詢保固或進行保固登記。")),
+    form,
+    el("div", { class: "card" }, el("h2", {}, "客服"), el("p", { class: "note" }, "QR Code 無法掃描或貼紙損壞？請聯絡客服："), support));
+  api({ action: "info" }).then(r => support.replaceChildren(...linkify((r && r.support) || "客服資訊準備中")))
+    .catch(() => support.replaceChildren("客服資訊準備中"));
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const miss = [[phone, "車主聯絡電話"], [plate, "車牌號碼"]].filter(([x]) => !x.value.trim()).map(([, n]) => n);
+    if (miss.length) { alert("請填寫：" + miss.join("、")); return; }
+    const busy = (on) => {
+      [btn, phone, plate].forEach(x => x.disabled = on);
+      btn.replaceChildren(...(on ? [el("span", { class: "spin" }), "查詢中，請稍候…"] : ["查詢保固"]));
+    };
+    const fail = (t) => { msg.textContent = t; busy(false); alert(t); };
+    busy(true); msg.textContent = "";
+    try {
+      const r = await api({ action: "find", phone: phone.value, plate: plate.value });
+      if (!r.ok) return fail(r.error || "查詢失敗，請稍後再試");
+      const back = () => app.append(el("p", {}, el("a", { href: "./" }, "← 返回查詢")));
+      if (r.items.length === 1) { render(r.items[0]); back(); return; }
+      // 同一組電話 + 車牌登記多台：列出讓車主選
+      app.replaceChildren(el("div", { class: "card" }, el("h2", {}, `找到 ${r.items.length} 筆保固資料`),
+        ...r.items.map(it => {
+          const [cls, txt] = STATUS[it.status] || ["b-warn", it.status];
+          const b = el("button", { type: "button", class: "pick" },
+            el("div", {}, it.model + "　" + (it.name || "")), el("div", { class: "note" }, "SN: " + it.sn + "　"), el("span", { class: "badge " + cls }, txt));
+          b.addEventListener("click", () => { render(it); back(); });
+          return b;
+        })));
+      back();
+    } catch { fail("連線失敗，請稍後再試"); }
+  });
+}
+
 (async () => {
-  if (!SN || !KEY) {
-    app.replaceChildren(el("div", { class: "card" }, el("h2", {}, "JB 產品保固查詢"),
-      el("p", {}, "請用手機掃描產品貼紙上的 QR Code 查詢保固與登記安裝日。")));
-    return;
-  }
+  if (!SN || !KEY) { landing(); return; }
   try { render(await api({ s: SN, k: KEY })); }
   catch { app.replaceChildren(el("div", { class: "card" }, el("p", { class: "err" }, "連線失敗，請稍後再試"))); }
 })();
