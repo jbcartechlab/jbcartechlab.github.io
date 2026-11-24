@@ -17,6 +17,9 @@
   .logo b{color:#fff}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
   .plate{background:linear-gradient(180deg,#d9dbe0,#b9bcc3);color:#111;border-radius:12px;padding:16px 18px;margin-bottom:14px}
+  h2.section{font-size:15px;color:var(--muted);letter-spacing:.1em;margin:26px 2px 10px}
+  details.terms-box summary{cursor:pointer;font-weight:700;padding:2px 0}
+  details.terms-box[open] summary{margin-bottom:8px}
   .pframe{background:linear-gradient(180deg,#d9dbe0,#b9bcc3);border-radius:10px;padding:12px;margin:0 0 14px}
   .pframe img{display:block;width:100%;max-width:380px;height:auto;margin:0 auto}
   .plate .model{font-weight:800;font-size:24px;letter-spacing:.02em}
@@ -102,13 +105,29 @@ async function api(params) {
   const r = await fetch(u.toString()); return r.json();
 }
 
+// ── 產品共用元件（保固頁與官網首頁共用）
+function plateBox(p, sn) {   // 銀色名牌：型號 / 名稱 / 英文名 ｜ 車型 / （序號）
+  return el("div", { class: "plate" },
+    el("div", { class: "model" }, p.model), el("div", { class: "name" }, p.name),
+    el("div", { class: "en" }, (p.nameEn || "") + (p.vehicle ? " ｜ FOR " + p.vehicle.toUpperCase() : "")),
+    sn ? el("div", { class: "sn" }, "SN: " + sn) : null);
+}
+function featureCard(p) {    // 功能說明：上方放產品圖（與 index.html 同資料夾的「<型號>.webp」；找不到就不顯示）
+  const pimg = el("img", { src: encodeURIComponent(p.model) + ".webp", alt: p.model + " 產品圖", width: "720", height: "489", decoding: "async", loading: "lazy" });
+  const pframe = el("div", { class: "pframe" }, pimg);
+  pimg.addEventListener("error", () => pframe.remove());
+  return el("div", { class: "card" }, el("h2", {}, "功能說明"), pframe,
+    p.description ? el("div", { class: "desc" }, ...richText(p.description)) : null);
+}
+function manualLine(p) {     // 安裝說明：http 開頭才做成連結，其他文字（例如「建置中」）直接顯示
+  if (/^https?:\/\//i.test(p.manual || "")) return el("p", {}, el("a", { href: p.manual, target: "_blank", rel: "noopener" }, "→ 安裝說明 / 常見問題"));
+  return p.manual ? el("p", {}, "安裝說明：" + p.manual) : null;
+}
+
 function render(d) {
   app.replaceChildren();
   if (!d.ok) { app.append(el("div", { class: "card" }, el("p", { class: "err" }, d.error || "查詢失敗"))); return; }
-  app.append(el("div", { class: "plate" },
-    el("div", { class: "model" }, d.model), el("div", { class: "name" }, d.name),
-    el("div", { class: "en" }, d.nameEn + (d.vehicle ? " ｜ FOR " + d.vehicle.toUpperCase() : "")),
-    el("div", { class: "sn" }, "SN: " + d.sn)));
+  app.append(plateBox(d, d.sn));
 
   const [cls, txt] = STATUS[d.status] || ["b-warn", d.status];
   const card = el("div", { class: "card" }, el("div", { class: "genuine" }, "✔ 正版商品認證"), el("span", { class: "badge " + cls }, txt));
@@ -129,16 +148,10 @@ function render(d) {
 
   if (d.canRegister) app.append(registerForm(d));
 
-  // 功能說明：上方放產品圖（與 index.html 同資料夾的「<型號>.webp」，例 JB-MX1-F45.webp；找不到就不顯示）
-  const pimg = el("img", { src: encodeURIComponent(d.model) + ".webp", alt: d.model + " 產品圖", width: "720", height: "489", decoding: "async", loading: "lazy" });
-  const pframe = el("div", { class: "pframe" }, pimg);
-  pimg.addEventListener("error", () => pframe.remove());
-  app.append(el("div", { class: "card" }, el("h2", {}, "功能說明"), pframe,
-    d.description ? el("div", { class: "desc" }, ...richText(d.description)) : null));
+  app.append(featureCard(d));
   if (d.terms) app.append(el("div", { class: "card" }, el("h2", {}, "保固與注意事項"), el("div", { class: "desc terms" }, ...richText(d.terms))));
   const links = el("div", { class: "card" }, el("h2", {}, "安裝說明與客服"));
-  if (/^https?:\/\//i.test(d.manual || "")) links.append(el("p", {}, el("a", { href: d.manual, target: "_blank", rel: "noopener" }, "→ 安裝說明 / 常見問題")));
-  else if (d.manual) links.append(el("p", {}, "安裝說明：" + d.manual));   // 例如「建置中」
+  const ml = manualLine(d); if (ml) links.append(ml);
   links.append(el("p", { class: "desc" }, ...linkify(d.support || "客服資訊準備中")));
   app.append(links);
 }
@@ -214,13 +227,24 @@ function landing() {
     el("p", { class: "note" }, "請輸入保固登記時填寫的車主聯絡電話與車牌號碼。"),
     el("label", {}, "車主聯絡電話"), phone, el("label", {}, "車牌號碼"), plate, btn, msg);
   const support = el("p", { class: "desc" }, "客服資訊載入中…");
+  const products = el("div");   // 產品介紹（由試算表「產品」頁載入）
   app.replaceChildren(
     el("div", { class: "card" }, el("h2", {}, "JB 產品保固查詢"),
       el("p", {}, "請用手機掃描產品貼紙上的 QR Code，查詢保固或進行保固登記。")),
-    form,
+    form, products,
     el("div", { class: "card" }, el("h2", {}, "客服"), el("p", { class: "note" }, "QR Code 無法掃描或貼紙損壞？請聯絡客服："), support));
-  api({ action: "info" }).then(r => support.replaceChildren(...linkify((r && r.support) || "客服資訊準備中")))
-    .catch(() => support.replaceChildren("客服資訊準備中"));
+  api({ action: "info" }).then(r => {
+    support.replaceChildren(...linkify((r && r.support) || "客服資訊準備中"));
+    const list = (r && r.products) || [];
+    if (list.length) products.append(el("h2", { class: "section" }, "產品介紹"));
+    list.forEach(p => {
+      products.append(plateBox(p), featureCard(p));
+      const extra = [manualLine(p),
+        p.terms ? el("details", { class: "terms-box" }, el("summary", {}, "保固與注意事項"), el("div", { class: "desc terms" }, ...richText(p.terms))) : null]
+        .filter(Boolean);
+      if (extra.length) products.append(el("div", { class: "card" }, ...extra));
+    });
+  }).catch(() => support.replaceChildren("客服資訊準備中"));
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
