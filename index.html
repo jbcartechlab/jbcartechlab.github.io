@@ -63,6 +63,8 @@
   .tip{background:rgba(245,184,74,.12);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:700;margin:0 0 8px}
   .err{color:var(--bad);font-weight:700}
   a{color:var(--silver)}
+  .line-btn{display:block;text-align:center;margin:8px 0 6px;padding:12px;border-radius:10px;background:#06C755;color:#fff;font-weight:800;font-size:16px;text-decoration:none}
+  .social{margin-top:12px}
   .loading{color:var(--muted);text-align:center;padding:40px 0}
 </style>
 </head>
@@ -114,6 +116,23 @@ function linkify(text) {
   }
   out.push(text.slice(last));
   return out;
+}
+// 客服區：LINE 連結做成主要按鈕（優先聯繫），其他社群連結（Facebook、TikTok…）縮成「最新資訊」小字
+function supportNodes(text) {
+  if (!text) return ["客服資訊準備中"];
+  const re = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>()（）]+)/g, links = [];
+  let m; while ((m = re.exec(text))) links.push({ href: m[2] || m[3], label: m[1] || m[3] });
+  const isLine = l => /lin\.ee|line\.me/i.test(l.href);
+  const line = links.find(isLine);
+  if (!line) return [el("div", { class: "desc" }, ...linkify(text))];
+  const others = links.filter(l => !isLine(l));
+  const rest = text.replace(re, "").split(/\n/).map(t => t.trim()).filter(Boolean);   // 連結以外的文字（電話、Email、營業時間…）照常顯示
+  return [
+    el("a", { class: "line-btn", href: line.href, target: "_blank", rel: "noopener" }, "💬 加入 LINE 客服諮詢"),
+    el("p", { class: "note" }, "安裝、保固、產品問題請優先透過 LINE 客服聯繫，回覆最快。"),
+    ...rest.map(t => el("div", { class: "desc" }, ...linkify(t))),
+    others.length ? el("p", { class: "note social" }, "最新消息與活動：", ...others.flatMap((l, i) => [i ? " ・ " : "", el("a", { href: l.href, target: "_blank", rel: "noopener" }, l.label.split("|").pop().trim())])) : null,
+  ].filter(Boolean);
 }
 const STATUS = {
   active: ["b-ok", "✓ 保固中"], expired: ["b-bad", "保固已過期"], repair: ["b-warn", "維修處理中"],
@@ -187,7 +206,7 @@ function render(d) {
   const fc = faqCard(d.faq); if (fc) app.append(fc);
   const links = el("div", { class: "card" }, el("h2", {}, "安裝說明與客服"));
   const ml = manualLine(d); if (ml) links.append(ml);
-  links.append(el("p", { class: "desc" }, ...linkify(d.support || "客服資訊準備中")));
+  links.append(...supportNodes(d.support));
   app.append(links);
 }
 
@@ -285,7 +304,7 @@ function landing() {
     el("h2", {}, "已登記車主查詢"),
     el("p", { class: "note" }, "請輸入保固登記時填寫的車主聯絡電話與車牌號碼。"),
     el("label", {}, "車主聯絡電話"), phone, el("label", {}, "車牌號碼"), plate, btn, msg);
-  const support = el("p", { class: "desc" }, "客服資訊載入中…");
+  const support = el("div", {}, "客服資訊載入中…");
   const products = el("div");   // 產品介紹（由試算表「產品」頁載入）
   const faq = el("div", { id: "faq" });   // 常見問題（有資料才顯示）
   app.replaceChildren(
@@ -294,7 +313,7 @@ function landing() {
     form, faq, products,
     el("div", { class: "card" }, el("h2", {}, "聯絡我們"), el("p", { class: "note" }, "產品介紹、安裝、保固或 QR Code 無法掃描等任何問題，歡迎與我們聯繫："), support));
   api({ action: "info" }).then(r => {
-    support.replaceChildren(...linkify((r && r.support) || "客服資訊準備中"));
+    support.replaceChildren(...supportNodes(r && r.support));
     const fc = faqCard((r && r.faq) || "");
     if (fc) {
       faq.append(fc);
