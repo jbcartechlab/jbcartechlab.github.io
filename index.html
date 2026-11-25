@@ -18,6 +18,10 @@
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
   .plate{background:linear-gradient(180deg,#d9dbe0,#b9bcc3);color:#111;border-radius:12px;padding:16px 18px;margin-bottom:14px}
   h2.section{font-size:15px;color:var(--muted);letter-spacing:.1em;margin:26px 2px 10px}
+  details.qa{border-top:1px solid var(--line);padding:10px 0}
+  details.qa:first-of-type{border-top:0}
+  details.qa summary{cursor:pointer;font-weight:700}
+  details.qa[open] summary{margin-bottom:6px}
   details.terms-box summary{cursor:pointer;font-weight:700;padding:2px 0}
   details.terms-box[open] summary{margin-bottom:8px}
   .pframe{background:linear-gradient(180deg,#d9dbe0,#b9bcc3);border-radius:10px;padding:12px;margin:0 0 14px}
@@ -46,6 +50,9 @@
   .fixed{margin:0;padding:11px 12px;border-radius:10px;border:1px dashed var(--line);color:var(--muted);font-size:15px}
   .desc .li{padding-left:1em;text-indent:-1em}
   .desc .gap{height:.6em}
+  .rfig{margin:8px 0 10px}
+  .rfig img{display:block;width:100%;max-width:320px;height:auto;border-radius:10px;border:1px solid var(--line)}
+  .rfig figcaption{font-size:12.5px;color:var(--muted);margin-top:4px}
   .terms{font-size:14px;color:var(--muted)}
   .privacy{margin:14px 0 0}
   .tip{background:rgba(245,184,74,.12);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:14px;font-weight:700;margin:0 0 8px}
@@ -79,6 +86,14 @@ function richText(text) {
   return String(text).split(/\r?\n/).map(line => {
     const t = line.trim();
     if (!t) return el("div", { class: "gap" });
+    // 圖片：整行寫 ![說明](檔名.webp)；只接受與網頁同資料夾的檔名或 https 網址
+    const im = t.match(/^!\[([^\]]*)\]\(((?:https:\/\/)?[\w./-]+\.(?:webp|png|jpe?g|gif))\)$/i);
+    if (im) {
+      const img = el("img", { class: "rimg", src: im[2], alt: im[1], loading: "lazy", decoding: "async" });
+      const fig = el("figure", { class: "rfig" }, img, im[1] ? el("figcaption", {}, im[1]) : null);
+      img.addEventListener("error", () => fig.remove());
+      return fig;
+    }
     return el("div", { class: /^[・•\-]/.test(t) ? "li" : "" }, ...linkify(t));
   });
 }
@@ -215,6 +230,17 @@ function registerForm(d) {
 }
 
 // 首頁（網址沒有序號）：掃碼說明 + 已登記車主用 電話 + 車牌 查詢 + 客服
+// 常見問題文字 → [[問題, 答案], …]；「Q」開頭的行是問題，之後到下一個 Q 之前都是答案（答案開頭的「A：」會去掉）
+function faqItems(text) {
+  const items = [];
+  String(text).split(/\r?\n/).forEach(line => {
+    const t = line.trim(), q = t.match(/^Q\s*[：:.、]?\s*(.+)$/i);
+    if (q) items.push([q[1], ""]);
+    else if (items.length) { const last = items[items.length - 1]; last[1] += (last[1] ? "\n" : "") + t.replace(/^A\s*[：:.、]?\s*/i, ""); }
+  });
+  return items.map(([q, a]) => [q, a.trim()]).filter(([q, a]) => q && a);
+}
+
 function landing() {
   const phone = el("input", { type: "tel", inputmode: "numeric", maxlength: "15", placeholder: "例如 0912345678" });
   const plate = el("input", { type: "text", maxlength: "10", autocapitalize: "characters", autocomplete: "off", placeholder: "例如 ABC-1234" });
@@ -228,13 +254,20 @@ function landing() {
     el("label", {}, "車主聯絡電話"), phone, el("label", {}, "車牌號碼"), plate, btn, msg);
   const support = el("p", { class: "desc" }, "客服資訊載入中…");
   const products = el("div");   // 產品介紹（由試算表「產品」頁載入）
+  const faq = el("div", { class: "card", id: "faq", hidden: "" }, el("h2", {}, "常見問題"));   // 有資料才顯示
   app.replaceChildren(
     el("div", { class: "card" }, el("h2", {}, "JB 產品保固查詢"),
       el("p", {}, "請用手機掃描產品貼紙上的 QR Code，查詢保固或進行保固登記。")),
-    form, products,
+    form, faq, products,
     el("div", { class: "card" }, el("h2", {}, "聯絡我們"), el("p", { class: "note" }, "產品介紹、安裝、保固或 QR Code 無法掃描等任何問題，歡迎與我們聯繫："), support));
   api({ action: "info" }).then(r => {
     support.replaceChildren(...linkify((r && r.support) || "客服資訊準備中"));
+    const qa = faqItems((r && r.faq) || "");
+    if (qa.length) {
+      faq.append(...qa.map(([q, a]) => el("details", { class: "qa" }, el("summary", {}, q), el("div", { class: "desc" }, ...richText(a)))));
+      faq.hidden = false;
+      if (location.hash === "#faq") faq.scrollIntoView();   // 從 LINE 等處用 #faq 連過來
+    }
     const list = (r && r.products) || [];
     if (list.length) products.append(el("h2", { class: "section" }, "產品介紹"));
     list.forEach(p => {
