@@ -71,7 +71,7 @@
   <header><div class="logo"><b>JB</b> CAR TECH LAB</div></header>
   <div id="app"><div class="loading">查詢中…</div></div>
 </main>
-<footer class="site-foot">© 2026 JB CAR TECH LAB<br>Designed by focuswagonjie<span class="ver">v2026.11.26</span></footer>
+<footer class="site-foot">© 2026 JB CAR TECH LAB<br>Designed by focuswagonjie<span class="ver" id="ver"></span></footer>
 <script>
 // ★ 部署 Apps Script 後，把「網頁應用程式網址」貼到這裡
 const API_URL = "https://script.google.com/macros/s/AKfycbwW6cVUaaKrmGk8QBFLBNxADI74mFKTtqfoVvI-eaaAqwtRq9oNiKyJZC119Qr0ISgSNg/exec";
@@ -337,6 +337,10 @@ function landing() {
     } catch { fail("連線失敗，請稍後再試"); }
   });
 }
+
+// 底部版本：用 GitHub 發布時間（document.lastModified）自動產生，每次上傳都會變，不用手動改
+{ const t = new Date(document.lastModified), p2 = n => String(n).padStart(2, "0");
+  if (!isNaN(t)) document.getElementById("ver").textContent = `v${t.getFullYear()}.${p2(t.getMonth() + 1)}.${p2(t.getDate())}-${p2(t.getHours())}${p2(t.getMinutes())}`; }
 
 (async () => {
   if (!SN || !KEY) { landing(); return; }
