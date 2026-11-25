@@ -203,9 +203,8 @@ function videoBox(url) {
 // 車主手冊按鈕：安裝手冊（試算表「安裝說明連結」有網址才顯示）＋ 保固登記教學（固定 register.html）
 function manualLine(p) {
   const btn = (href, icon, t, sub) => el("a", { class: "guide-btn", href }, el("span", { class: "gi" }, icon), el("span", {}, el("b", {}, t), el("small", {}, sub)));
-  const list = [];
+  const list = [btn("register.html", "📝", "保固登記教學", "安裝前先登記・約 1 分鐘")];   // 順序 = 車主流程：先登記、再安裝
   if (/^(https?:\/\/|[\w-]+\.html)/i.test(p.manual || "")) list.push(btn(p.manual, "🔧", "自行安裝手冊", "圖文步驟・約 20 分鐘"));
-  list.push(btn("register.html", "📝", "保固登記教學", "掃 QR Code・約 1 分鐘"));
   return el("div", { class: "guide-btns" }, ...list);
 }
 
@@ -234,14 +233,14 @@ function render(d) {
   if (d.justRegistered) card.append(el("p", { class: "note" }, "✓ 保固登記完成"));
   else if (d.registered) card.append(el("p", { class: "note" }, "如登記資料有誤或非本人登記，請聯絡客服或安裝店家。"));
   app.append(card);
+  app.append(manualLine(d));   // 車主手冊放在狀態卡下方，一進來就看得到
 
   if (d.canRegister) app.append(registerForm(d));
 
   app.append(featureCard(d));
   if (d.terms) app.append(el("div", { class: "card" }, el("h2", {}, "保固與注意事項"), el("div", { class: "desc terms" }, ...richText(d.terms))));
   const fc = faqCard(d.faq); if (fc) app.append(fc);
-  const links = el("div", { class: "card" }, el("h2", {}, "安裝手冊與客服"));
-  const ml = manualLine(d); if (ml) links.append(ml);
+  const links = el("div", { class: "card" }, el("h2", {}, "客服"));
   links.append(...supportNodes(d.support));
   app.append(links);
 }
@@ -278,7 +277,7 @@ function registerForm(d) {
     : [el("label", {}, "安裝日期（必填，預設今天）"), date];
   const form = el("form", { class: "card", novalidate: "" },
     el("h2", {}, d.needShop && d.lateRegister ? "補登保固資料" : "保固登記"),
-    d.needShop ? el("p", { class: "tip" }, "本商品為授權店家安裝件，請由安裝店家協助登記。") : el("p", { class: "note" }, "第一次登記？", el("a", { href: "register.html" }, "看圖文教學 →")),
+    d.needShop ? el("p", { class: "tip" }, "本商品為授權店家安裝件，請由安裝店家協助登記。") : null,
     el("p", { class: "note" }, selfNow
       ? `${d.registerDeadline} 前登記，保固從登記當天起算；未登記則自出貨日 + ${d.defaultDays} 天起算。送出後不可自行修改。`
       : late
