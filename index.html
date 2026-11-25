@@ -24,6 +24,9 @@
   details.qa[open] summary{margin-bottom:6px}
   details.terms-box summary{cursor:pointer;font-weight:700;padding:2px 0}
   details.terms-box[open] summary{margin-bottom:8px}
+  .vbox{position:relative;width:100%;aspect-ratio:16/9;margin:0 0 14px;border-radius:10px;overflow:hidden;background:#000}
+  .vbox.tall{aspect-ratio:9/16;max-width:300px;margin-left:auto;margin-right:auto}
+  .vbox iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
   .pframe{background:linear-gradient(180deg,#d9dbe0,#b9bcc3);border-radius:10px;padding:12px;margin:0 0 14px}
   .pframe img{display:block;width:100%;max-width:380px;height:auto;margin:0 auto}
   .plate .model{font-weight:800;font-size:24px;letter-spacing:.02em}
@@ -131,8 +134,17 @@ function featureCard(p) {    // 功能說明：上方放產品圖（與 index.ht
   const pimg = el("img", { src: encodeURIComponent(p.model) + ".webp", alt: p.model + " 產品圖", width: "720", height: "489", decoding: "async", loading: "lazy" });
   const pframe = el("div", { class: "pframe" }, pimg);
   pimg.addEventListener("error", () => pframe.remove());
-  return el("div", { class: "card" }, el("h2", {}, "功能說明"), pframe,
+  return el("div", { class: "card" }, el("h2", {}, "功能說明"), pframe, videoBox(p.video),
     p.description ? el("div", { class: "desc" }, ...richText(p.description)) : null);
+}
+// YouTube 影片（試算表「影片」欄貼網址）：支援 youtu.be / watch?v= / shorts / embed；Shorts 直式，其他橫式
+function videoBox(url) {
+  const m = String(url || "").match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/embed\/)([\w-]{11})/);
+  if (!m) return null;
+  const tall = /\/shorts\//.test(url);
+  return el("div", { class: "vbox" + (tall ? " tall" : "") },
+    el("iframe", { src: "https://www.youtube-nocookie.com/embed/" + m[1] + "?rel=0&playsinline=1", title: "產品影片",
+      loading: "lazy", allow: "accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen", allowfullscreen: "" }));
 }
 function manualLine(p) {     // 安裝說明：http 開頭才做成連結，其他文字（例如「建置中」）直接顯示
   if (/^https?:\/\//i.test(p.manual || "")) return el("p", {}, el("a", { href: p.manual, target: "_blank", rel: "noopener" }, "→ 安裝說明 / 常見問題"));
