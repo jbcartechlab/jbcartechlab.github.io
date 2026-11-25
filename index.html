@@ -161,7 +161,7 @@ function render(d) {
   const dl = el("dl");
   const row = (k, v) => v && dl.append(el("dt", {}, k), el("dd", {}, v));
   row("適用車型", d.vehicle);
-  if (d.start) row("保固起算", d.start + (d.startByInstall ? "（安裝日）" : "（依出貨日自動起算）"));
+  if (d.start) row("保固起算", d.start + (d.startByInstall ? (d.needShop ? "（安裝日）" : "（登記日）") : "（依出貨日自動起算）"));
   if (d.end) row("保固到期", d.end + (d.status === "active" ? `（剩 ${d.daysLeft} 天）` : ""));
   row("保固期", d.warrantyMonths + " 個月");
   if (d.registered) row("安裝店家", d.shop || "—");
@@ -205,16 +205,21 @@ function registerForm(d) {
   const shopFields = d.needShop ? [el("label", {}, "店家代碼（授權店家安裝時由店家填寫）（必填）"), shop] : [];
   const msg = el("p", { class: "err" });
   // 店家件（期限內）：選安裝日（預設今天）；自行安裝件或逾期：保固起算固定為出貨日 + N 天，不能選
-  const late = !d.needShop || d.lateRegister;
+  const late = d.lateRegister;                       // 逾期：起算日固定為出貨日 + N 天
+  const selfNow = !d.needShop && !d.lateRegister;    // 自行安裝件期限內：從登記當天起算
   const BTN = "登記保固";
   const btn = el("button", { type: "submit" }, BTN);
-  const dateFields = late
+  const dateFields = selfNow
+    ? [el("label", {}, "保固起算日"), el("p", { class: "fixed" }, `${iso}（今天登記，從登記日起算）`)]
+    : late
     ? [el("label", {}, "保固起算日"), el("p", { class: "fixed" }, `${d.start}（出貨日 + ${d.defaultDays} 天自動起算）`)]
     : [el("label", {}, "安裝日期（必填，預設今天）"), date];
   const form = el("form", { class: "card", novalidate: "" },
     el("h2", {}, d.needShop && d.lateRegister ? "補登保固資料" : "保固登記"),
     d.needShop ? el("p", { class: "tip" }, "本商品為授權店家安裝件，請由安裝店家協助登記。") : null,
-    el("p", { class: "note" }, late
+    el("p", { class: "note" }, selfNow
+      ? `${d.registerDeadline} 前登記，保固從登記當天起算；未登記則自出貨日 + ${d.defaultDays} 天起算。送出後不可自行修改。`
+      : late
       ? `保固已自動起算。請登記聯絡資料，方便日後保固服務；送出後不可自行修改。`
       : "保固自安裝日起算。請於安裝完成後登記，送出後不可自行修改。"),
     ...dateFields, ...shopFields,
