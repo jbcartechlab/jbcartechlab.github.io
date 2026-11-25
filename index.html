@@ -50,6 +50,8 @@
   .spin{display:inline-block;width:16px;height:16px;margin-right:8px;vertical-align:-3px;border:2px solid rgba(0,0,0,.25);border-top-color:#111;border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   .note{font-size:13px;color:var(--muted)}
+  .site-foot{text-align:center;font-size:12px;line-height:1.8;color:var(--muted);opacity:.7;padding:8px 16px 28px}
+  .site-foot .ver{display:block;font-size:11px;opacity:.6;letter-spacing:.05em}
   .fixed{margin:0;padding:11px 12px;border-radius:10px;border:1px dashed var(--line);color:var(--muted);font-size:15px}
   .desc .li{padding-left:1em;text-indent:-1em}
   .desc .gap{height:.6em}
@@ -69,6 +71,7 @@
   <header><div class="logo"><b>JB</b> CAR TECH LAB</div></header>
   <div id="app"><div class="loading">查詢中…</div></div>
 </main>
+<footer class="site-foot">© 2026 JB CAR TECH LAB<br>Designed by focuswagonjie<span class="ver">v2026.11.26</span></footer>
 <script>
 // ★ 部署 Apps Script 後，把「網頁應用程式網址」貼到這裡
 const API_URL = "https://script.google.com/macros/s/AKfycbwW6cVUaaKrmGk8QBFLBNxADI74mFKTtqfoVvI-eaaAqwtRq9oNiKyJZC119Qr0ISgSNg/exec";
