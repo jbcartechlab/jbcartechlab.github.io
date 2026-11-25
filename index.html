@@ -165,6 +165,7 @@ function render(d) {
 
   app.append(featureCard(d));
   if (d.terms) app.append(el("div", { class: "card" }, el("h2", {}, "保固與注意事項"), el("div", { class: "desc terms" }, ...richText(d.terms))));
+  const fc = faqCard(d.faq); if (fc) app.append(fc);
   const links = el("div", { class: "card" }, el("h2", {}, "安裝說明與客服"));
   const ml = manualLine(d); if (ml) links.append(ml);
   links.append(el("p", { class: "desc" }, ...linkify(d.support || "客服資訊準備中")));
@@ -241,6 +242,14 @@ function faqItems(text) {
   return items.map(([q, a]) => [q, a.trim()]).filter(([q, a]) => q && a);
 }
 
+// 常見問題卡片（首頁與保固頁共用）；沒有內容回傳 null
+function faqCard(text) {
+  const qa = faqItems(text || "");
+  if (!qa.length) return null;
+  return el("div", { class: "card" }, el("h2", {}, "常見問題"),
+    ...qa.map(([q, a]) => el("details", { class: "qa" }, el("summary", {}, q), el("div", { class: "desc" }, ...richText(a)))));
+}
+
 function landing() {
   const phone = el("input", { type: "tel", inputmode: "numeric", maxlength: "15", placeholder: "例如 0912345678" });
   const plate = el("input", { type: "text", maxlength: "10", autocapitalize: "characters", autocomplete: "off", placeholder: "例如 ABC-1234" });
@@ -254,7 +263,7 @@ function landing() {
     el("label", {}, "車主聯絡電話"), phone, el("label", {}, "車牌號碼"), plate, btn, msg);
   const support = el("p", { class: "desc" }, "客服資訊載入中…");
   const products = el("div");   // 產品介紹（由試算表「產品」頁載入）
-  const faq = el("div", { class: "card", id: "faq", hidden: "" }, el("h2", {}, "常見問題"));   // 有資料才顯示
+  const faq = el("div", { id: "faq" });   // 常見問題（有資料才顯示）
   app.replaceChildren(
     el("div", { class: "card" }, el("h2", {}, "JB 產品保固查詢"),
       el("p", {}, "請用手機掃描產品貼紙上的 QR Code，查詢保固或進行保固登記。")),
@@ -262,10 +271,9 @@ function landing() {
     el("div", { class: "card" }, el("h2", {}, "聯絡我們"), el("p", { class: "note" }, "產品介紹、安裝、保固或 QR Code 無法掃描等任何問題，歡迎與我們聯繫："), support));
   api({ action: "info" }).then(r => {
     support.replaceChildren(...linkify((r && r.support) || "客服資訊準備中"));
-    const qa = faqItems((r && r.faq) || "");
-    if (qa.length) {
-      faq.append(...qa.map(([q, a]) => el("details", { class: "qa" }, el("summary", {}, q), el("div", { class: "desc" }, ...richText(a)))));
-      faq.hidden = false;
+    const fc = faqCard((r && r.faq) || "");
+    if (fc) {
+      faq.append(fc);
       if (location.hash === "#faq") faq.scrollIntoView();   // 從 LINE 等處用 #faq 連過來
     }
     const list = (r && r.products) || [];
