@@ -174,6 +174,8 @@ function render(d) {
   card.append(dl);
   if (d.status === "待安裝登記") card.append(el("p", { class: "note" }, d.needShop ? "此商品由授權店家安裝，店家完成安裝登記後，保固才開始起算。"
     : `請於 ${d.registerDeadline} 前完成登記，保固從登記當天起算。`));
+  if (d.status === "active" && !d.registered && d.canRegister)   // 逾期未登記：保固已自動起算，但提醒補登
+    card.append(el("p", { class: "tip" }, "⚠ 尚未登記：保固已依出貨日自動起算。請盡速於下方登記聯絡電話與車牌，確保保固資料完整，日後維修、更換更順利。"));
   if (d.justRegistered) card.append(el("p", { class: "note" }, "✓ 保固登記完成"));
   else if (d.registered) card.append(el("p", { class: "note" }, "如登記資料有誤或非本人登記，請聯絡客服或安裝店家。"));
   app.append(card);
