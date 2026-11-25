@@ -216,7 +216,7 @@ function registerForm(d) {
     d.needShop ? el("p", { class: "tip" }, "本商品為授權店家安裝件，請由安裝店家協助登記。") : null,
     el("p", { class: "note" }, late
       ? `保固已自動起算。請登記聯絡資料，方便日後保固服務；送出後不可自行修改。`
-      : `保固自安裝日起算（最早為出貨日 + ${d.defaultDays} 天）。請於安裝完成後登記，送出後不可自行修改。`),
+      : "保固自安裝日起算。請於安裝完成後登記，送出後不可自行修改。"),
     ...dateFields, ...shopFields,
     el("label", {}, "車主聯絡電話（必填）"), phone, el("label", {}, "車牌號碼（必填）"), plate,
     el("p", { class: "note privacy" }, "電話與車牌僅用於保固服務聯絡與身分核對，不會提供給第三方。"),
