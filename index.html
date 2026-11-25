@@ -236,7 +236,7 @@ function registerForm(d) {
     busy(true); msg.textContent = "";
     try {
       const r = await api({ action: "register", s: SN, k: KEY, date: late ? "" : date.value, shop: d.needShop ? shop.value : "", phone: phone.value, plate: plate.value });
-      if (r.ok) render(r); else fail(r.error || "登記失敗，請稍後再試");
+      if (r.ok) { render(r); window.scrollTo(0, 0); } else fail(r.error || "登記失敗，請稍後再試");
     } catch { fail("連線失敗，請稍後再試"); }
   });
   return form;
