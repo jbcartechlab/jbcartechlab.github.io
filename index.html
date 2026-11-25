@@ -11,18 +11,33 @@
         --ok:#3ecf8e;--warn:#f5b84a;--bad:#ef5a5a;--accent:#d8dadf}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",system-ui,sans-serif;line-height:1.6}
-  main{max-width:520px;margin:0 auto;padding:20px 16px 48px}
+  main{max-width:640px;margin:0 auto;padding:20px 16px 40px}
   header{display:flex;align-items:center;gap:10px;margin-bottom:18px}
   .logo{font-weight:800;letter-spacing:.12em;font-size:15px;color:var(--silver)}
   .logo b{color:#fff}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
-  .plate{background:linear-gradient(180deg,#d9dbe0,#b9bcc3);color:#111;border-radius:12px;padding:16px 18px;margin-bottom:14px}
-  h2.section{font-size:15px;color:var(--muted);letter-spacing:.1em;margin:26px 2px 10px}
+  .hero{background:linear-gradient(180deg,#d9dbe0,#b9bcc3);color:#111;border-radius:14px;padding:20px 20px 18px;margin-bottom:14px}
+  .hero h1{margin:4px 0 4px;font-size:26px;line-height:1.3;letter-spacing:.02em}
+  .hero p{margin:0;font-size:14.5px;opacity:.8}
+  .kicker{font-size:12px;letter-spacing:.14em;font-weight:700;opacity:.65}
+  .hero-links{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+  .hero-links a{background:rgba(255,255,255,.45);border-radius:10px;padding:9px 10px;color:#111;text-decoration:none;font-weight:700;font-size:14.5px}
+  .hero-links small{display:block;font-weight:400;font-size:11.5px;opacity:.65}
+  .dock{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(18,18,20,0),rgba(18,18,20,.96) 35%);z-index:5}
+  .dock a{max-width:608px;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:#06C755;color:#fff;font-weight:800;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+  .plate{background:linear-gradient(180deg,#d9dbe0,#b9bcc3);color:#111;border-radius:14px;padding:20px 20px 18px;margin-bottom:14px}
+  h2.section{font-size:13px;color:var(--muted);letter-spacing:.14em;margin:30px 4px 10px;font-weight:700}
   details.qa{border-top:1px solid var(--line);padding:10px 0}
   details.qa:first-of-type{border-top:0}
-  details.qa summary{cursor:pointer;font-weight:700}
+  details.qa summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:10px}
+  details.qa summary::-webkit-details-marker{display:none}
+  details.qa summary::after{content:"+";color:var(--muted);font-weight:400}
+  details.qa[open] summary::after{content:"−"}
   details.qa[open] summary{margin-bottom:6px}
-  details.terms-box summary{cursor:pointer;font-weight:700;padding:2px 0}
+  details.terms-box summary{cursor:pointer;font-weight:700;padding:2px 0;list-style:none;display:flex;justify-content:space-between}
+  details.terms-box summary::-webkit-details-marker{display:none}
+  details.terms-box summary::after{content:"+";color:var(--muted);font-weight:400}
+  details.terms-box[open] summary::after{content:"−"}
   details.terms-box[open] summary{margin-bottom:8px}
   .vbox{position:relative;width:100%;aspect-ratio:16/9;margin:0 0 14px;border-radius:10px;overflow:hidden;background:#000}
   .vbox.tall{aspect-ratio:9/16;max-width:300px;margin-left:auto;margin-right:auto}
@@ -39,7 +54,7 @@
   .genuine{color:var(--ok);font-weight:700;margin-bottom:8px}
   dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:12px 0 0}
   dt{color:var(--muted)} dd{margin:0;font-weight:600}
-  h2{font-size:16px;margin:0 0 10px}
+  h2{font-size:18px;margin:0 0 10px}
   .desc{white-space:pre-line;color:var(--text)}
   label{display:block;font-size:14px;color:var(--muted);margin:10px 0 4px}
   input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#121317;color:var(--text);font-size:16px}
@@ -50,7 +65,7 @@
   .spin{display:inline-block;width:16px;height:16px;margin-right:8px;vertical-align:-3px;border:2px solid rgba(0,0,0,.25);border-top-color:#111;border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   .note{font-size:13px;color:var(--muted)}
-  .site-foot{text-align:center;font-size:12px;line-height:1.8;color:var(--muted);opacity:.7;padding:8px 16px 28px}
+  .site-foot{text-align:center;font-size:12px;line-height:1.8;color:var(--muted);opacity:.7;padding:8px 16px 96px}
   .site-foot .ver{display:block;font-size:11px;opacity:.6;letter-spacing:.05em}
   .fixed{margin:0;padding:11px 12px;border-radius:10px;border:1px dashed var(--line);color:var(--muted);font-size:15px}
   .desc .li{padding-left:1em;text-indent:-1em}
@@ -69,6 +84,12 @@
   .chips{display:flex;flex-wrap:wrap;gap:8px}
   .chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--line);border-radius:999px;background:#121317;color:var(--text);text-decoration:none;font-size:14px}
   .chip b{font-weight:700;color:var(--muted);font-size:12.5px}
+  .guide-btns{display:grid;gap:8px;margin:0 0 14px}
+  .guide-btn{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#121317;color:var(--text);text-decoration:none}
+  .guide-btn .gi{font-size:22px;line-height:1}
+  .guide-btn b{display:block;font-size:15.5px}
+  .guide-btn small{display:block;color:var(--muted);font-size:12.5px}
+  .guide-btn::after{content:"›";margin-left:auto;color:var(--muted);font-size:22px}
   .loading{color:var(--muted);text-align:center;padding:40px 0}
 </style>
 </head>
@@ -77,6 +98,7 @@
   <header><div class="logo"><b>JB</b> CAR TECH LAB</div></header>
   <div id="app"><div class="loading">查詢中…</div></div>
 </main>
+<div class="dock"><a href="https://lin.ee/WItu7Ju" target="_blank" rel="noopener">💬 有問題？LINE 客服 @922kpahu</a></div>
 <footer class="site-foot">© 2026 JB CAR TECH LAB<br>Designed by focuswagonjie<span class="ver" id="ver"></span></footer>
 <script>
 // ★ 部署 Apps Script 後，把「網頁應用程式網址」貼到這裡
@@ -157,6 +179,7 @@ async function api(params) {
 // ── 產品共用元件（保固頁與官網首頁共用）
 function plateBox(p, sn) {   // 銀色名牌：型號 / 名稱 / 英文名 ｜ 車型 / （序號）
   return el("div", { class: "plate" },
+    el("div", { class: "kicker" }, sn ? "WARRANTY CHECK" : "PRODUCT"),
     el("div", { class: "model" }, p.model), el("div", { class: "name" }, p.name),
     el("div", { class: "en" }, (p.nameEn || "") + (p.vehicle ? " ｜ FOR " + p.vehicle.toUpperCase() : "")),
     sn ? el("div", { class: "sn" }, "SN: " + sn) : null);
@@ -177,9 +200,13 @@ function videoBox(url) {
     el("iframe", { src: "https://www.youtube-nocookie.com/embed/" + m[1] + "?rel=0&playsinline=1", title: "產品影片",
       loading: "lazy", allow: "accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen", allowfullscreen: "" }));
 }
-function manualLine(p) {     // 安裝說明：http 開頭才做成連結，其他文字（例如「建置中」）直接顯示
-  if (/^https?:\/\//i.test(p.manual || "")) return el("p", {}, el("a", { href: p.manual, target: "_blank", rel: "noopener" }, "→ 安裝說明 / 常見問題"));
-  return p.manual ? el("p", {}, "安裝說明：" + p.manual) : null;
+// 車主手冊按鈕：安裝手冊（試算表「安裝說明連結」有網址才顯示）＋ 保固登記教學（固定 register.html）
+function manualLine(p) {
+  const btn = (href, icon, t, sub) => el("a", { class: "guide-btn", href }, el("span", { class: "gi" }, icon), el("span", {}, el("b", {}, t), el("small", {}, sub)));
+  const list = [];
+  if (/^(https?:\/\/|[\w-]+\.html)/i.test(p.manual || "")) list.push(btn(p.manual, "🔧", "自行安裝手冊", "圖文步驟・約 20 分鐘"));
+  list.push(btn("register.html", "📝", "保固登記教學", "掃 QR Code・約 1 分鐘"));
+  return el("div", { class: "guide-btns" }, ...list);
 }
 
 function render(d) {
@@ -213,7 +240,7 @@ function render(d) {
   app.append(featureCard(d));
   if (d.terms) app.append(el("div", { class: "card" }, el("h2", {}, "保固與注意事項"), el("div", { class: "desc terms" }, ...richText(d.terms))));
   const fc = faqCard(d.faq); if (fc) app.append(fc);
-  const links = el("div", { class: "card" }, el("h2", {}, "安裝說明與客服"));
+  const links = el("div", { class: "card" }, el("h2", {}, "安裝手冊與客服"));
   const ml = manualLine(d); if (ml) links.append(ml);
   links.append(...supportNodes(d.support));
   app.append(links);
@@ -251,7 +278,7 @@ function registerForm(d) {
     : [el("label", {}, "安裝日期（必填，預設今天）"), date];
   const form = el("form", { class: "card", novalidate: "" },
     el("h2", {}, d.needShop && d.lateRegister ? "補登保固資料" : "保固登記"),
-    d.needShop ? el("p", { class: "tip" }, "本商品為授權店家安裝件，請由安裝店家協助登記。") : null,
+    d.needShop ? el("p", { class: "tip" }, "本商品為授權店家安裝件，請由安裝店家協助登記。") : el("p", { class: "note" }, "第一次登記？", el("a", { href: "register.html" }, "看圖文教學 →")),
     el("p", { class: "note" }, selfNow
       ? `${d.registerDeadline} 前登記，保固從登記當天起算；未登記則自出貨日 + ${d.defaultDays} 天起算。送出後不可自行修改。`
       : late
@@ -317,8 +344,12 @@ function landing() {
   const products = el("div");   // 產品介紹（由試算表「產品」頁載入）
   const faq = el("div", { id: "faq" });   // 常見問題（有資料才顯示）
   app.replaceChildren(
-    el("div", { class: "card" }, el("h2", {}, "JB 產品保固查詢"),
-      el("p", {}, "請用手機掃描產品貼紙上的 QR Code，查詢保固或進行保固登記。")),
+    el("section", { class: "hero" }, el("div", { class: "kicker" }, "WARRANTY & SUPPORT"),
+      el("h1", {}, "JB 產品保固查詢"),
+      el("p", {}, "用手機掃描產品貼紙上的 QR Code，即可查詢保固或進行保固登記。"),
+      el("div", { class: "hero-links" },
+        el("a", { href: "register.html" }, "📝 保固登記教學", el("small", {}, "掃 QR Code・約 1 分鐘")),
+        el("a", { href: "install.html" }, "🔧 自行安裝手冊", el("small", {}, "圖文步驟・約 20 分鐘")))),
     form, faq, products,
     el("div", { class: "card" }, el("h2", {}, "聯絡我們"), el("p", { class: "note" }, "產品介紹、安裝、保固或 QR Code 無法掃描等任何問題，歡迎與我們聯繫："), support));
   api({ action: "info" }).then(r => {
