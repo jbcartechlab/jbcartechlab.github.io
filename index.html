@@ -161,6 +161,7 @@ function render(d) {
   const dl = el("dl");
   const row = (k, v) => v && dl.append(el("dt", {}, k), el("dd", {}, v));
   row("適用車型", d.vehicle);
+  if (d.status === "待安裝登記" && !d.needShop) row("保固起算", "尚未登記");   // 自行安裝件期限內未登記
   if (d.start) row("保固起算", d.start + (d.startByInstall ? (d.needShop ? "（安裝日）" : "（登記日）") : "（依出貨日自動起算）"));
   if (d.end) row("保固到期", d.end + (d.status === "active" ? `（剩 ${d.daysLeft} 天）` : ""));
   row("保固期", d.warrantyMonths + " 個月");
@@ -168,7 +169,8 @@ function render(d) {
   if (d.registered) row("登記車牌", d.plate);
   row("PCB / 韌體", [d.pcb, d.fw].filter(Boolean).join(" / "));
   card.append(dl);
-  if (d.status === "待安裝登記") card.append(el("p", { class: "note" }, "此商品由授權店家安裝，店家完成安裝登記後，保固才開始起算。"));
+  if (d.status === "待安裝登記") card.append(el("p", { class: "note" }, d.needShop ? "此商品由授權店家安裝，店家完成安裝登記後，保固才開始起算。"
+    : `請於 ${d.registerDeadline} 前完成登記，保固從登記當天起算。`));
   if (d.justRegistered) card.append(el("p", { class: "note" }, "✓ 保固登記完成"));
   else if (d.registered) card.append(el("p", { class: "note" }, "如登記資料有誤或非本人登記，請聯絡客服或安裝店家。"));
   app.append(card);
