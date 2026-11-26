@@ -233,7 +233,7 @@ function render(d) {
   if (d.justRegistered) card.append(el("p", { class: "note" }, "✓ 保固登記完成"));
   else if (d.registered) card.append(el("p", { class: "note" }, "如登記資料有誤或非本人登記，請聯絡客服或安裝店家。"));
   app.append(card);
-  app.append(manualLine(d));   // 車主手冊放在狀態卡下方，一進來就看得到
+  if (!d.needShop) app.append(manualLine(d));   // 車主手冊放在狀態卡下方；店家件不顯示（店家有 PDF 手冊）
 
   if (d.canRegister) app.append(registerForm(d));
 
