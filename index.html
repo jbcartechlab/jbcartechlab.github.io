@@ -239,7 +239,8 @@ function render(d) {
 
   app.append(featureCard(d));
   if (d.terms) app.append(el("div", { class: "card" }, el("h2", {}, "保固與注意事項"), el("div", { class: "desc terms" }, ...richText(d.terms))));
-  const fc = faqCard(d.faq); if (fc) app.append(fc);
+  // 常見問題：店家件登記前（店家登記畫面）不顯示；登記後車主查詢仍顯示，方便故障排除
+  const fc = (d.needShop && !d.registered) ? null : faqCard(d.faq); if (fc) app.append(fc);
   const links = el("div", { class: "card" }, el("h2", {}, "客服"));
   links.append(...supportNodes(d.support));
   app.append(links);
